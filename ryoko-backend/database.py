@@ -12,10 +12,6 @@ def get_data():
     return data
 
 def filter_data(data: dict, filter_params: dict):
-    filter_rules = []
-    for obj in filter_params:
-        if obj['operator'] == '=':
-            filter_rules.append(filtering.EqualsRule(obj['field'], obj['value']))
-    city_filter = filtering.CityFilter(filter_rules)
+    filters = filtering.create_filter_rules(filter_params)
 
-    return filtering.apply_filter(data, city_filter)
+    return filtering.apply_filter(data, filters)

@@ -1,50 +1,29 @@
 import json
-from typing import List
-from abc import ABC, abstractmethod
+from typing import Callable, List
 
-class FilterRule(ABC):
-    @abstractmethod
-    def apply(self, json_obj: dict) -> dict:
-        pass
+DictPredicate = Callable[[dict], bool]
 
-class EqualsRule:
-    def __init__(self, field: str, value: str):
-        self.field = field
-        self.value = value
+def create_filter_rules(filter_params: dict) -> List[DictPredicate]:
+    filter_rules = []
+    for obj in filter_params:
+        if obj["operator"] == "=":
+            filter_rules.append(lambda x,obj=obj: str(obj["value"]) == str(x[obj["field"]]))
+        if obj["operator"] == "<":
+            filter_rules.append(lambda x,obj=obj: obj["value"] > x[obj["field"]])
+        if obj["operator"] == ">":
+            filter_rules.append(lambda x,obj=obj: obj["value"] < x[obj["field"]])
+        if obj["operator"] == "<>":
+            filter_rules.append(lambda x,obj=obj: obj["value"] != str(x[obj["field"]]))
+    return filter_rules
 
-    def apply(self, json_obj: dict) -> dict:
-        if json_obj is None:
-            return False
-        if self.field not in json_obj:
-            return false
-        if str(json_obj[self.field]) == self.value:
-            return True
-        else:
-            return False
 
-class CityFilter:
-    def __init__(self, filter_rules: List[FilterRule]):
-        self.filter_rules = filter_rules
-
-    def apply(self, json_obj: dict) -> dict:
-        if self.filter_rules is None:
-            return json_obj
-            
-        for rule in self.filter_rules:
-            if not rule.apply(json_obj):
-                return False
-
-        return True
-
-def apply_filter(json_obj: dict, city_filter: CityFilter) -> dict:
-    if city_filter is None:
-        return json_obj
+def apply_filter(json_obj: dict, filters: List[DictPredicate]) -> dict:
     if json_obj is None:
-        return json.loads('{}')
+        return {}
+    if filters is None or not len(filters):
+        return json_obj
 
-    response_dict = {}
-    response_dict['d'] = [x for x in json_obj['d'] if city_filter.apply(x)]
+    filtered = [x for x in json_obj["d"] if all((pred(x) for pred in filters))]
 
+    response_dict = {"d": filtered}
     return response_dict
-
-

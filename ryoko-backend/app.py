@@ -22,7 +22,7 @@ valid_operators = ['=', '<', '>']
 # for it, then it better be valid
 schema = Schema([{
     'field': And(str, lambda s: s.isalnum(), lambda s: len(s) <= 20),
-    'value': And(str, lambda s: all(x.isalpha() or x.isdigit() or x.isspace() or x == '.' for x in s), lambda s: len(s) <= 20),
+    'value': Or(float, int, And(str, lambda s: all(x.isalpha() or x.isdigit() or x.isspace() or x == '.' for x in s), lambda s: len(s) <= 20)),
     'operator': And(str, lambda s: s in valid_operators, lambda s: len(s) <= 20),
 }])
 

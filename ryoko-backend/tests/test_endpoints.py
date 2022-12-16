@@ -4,14 +4,6 @@ import json
 from flask import jsonify
 
 def test_cities(test_client):
+     response = test_client.get('/')
 
-    params = {}
-
-    headers = {
-         'Content-Type': 'application/json'
-    }
-
-    response = test_client.post('/', data=json.dumps(params), headers=headers)
-
-    assert response.get_json() == True
-    assert response.status_code == 200
+     assert response.status_code == 200
