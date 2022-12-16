@@ -1,0 +1,9 @@
+Flask==2.2.2
+Flask-Bcrypt==1.0.1
+Flask-Cors==3.0.10
+Flask-Login==0.6.2
+gevent==22.10.2
+psycopg2-binary==2.9.5
+sqlalchemy==1.4.43
+pytest==7.2.0
+schema==0.7.5

@@ -1,0 +1,18 @@
+server {
+    listen 8080;
+
+    root /usr/share/nginx/html/;
+
+    index index.html;
+
+    location / {
+            try_files $uri /index.html;
+    }
+
+    location /api {
+            proxy_pass ${REACT_APP_NGINXPROXY};
+            client_max_body_size 100m;
+            add_header 'Access-Control-Allow-Origin' http://localhost:8080;
+            add_header 'Access-Control-Allow-Credentials' 'true';
+    }
+}

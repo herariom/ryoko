@@ -1,0 +1,47 @@
+services:
+  backend:
+    build: 
+      context: ./ryoko-backend
+      args:
+        - HOST=${HOST}
+        - DBNAME=${POSTGRES_DB}
+        - USER=${USER}
+        - PASS=${PASS}
+    container_name: backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - ".env"
+    depends_on:
+      - db
+  db:
+    image: postgres:13-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      POSTGRES_DB: "${POSTGRES_DB}"
+    env_file:
+      - ".env"
+    container_name: db
+    ports:
+      - "5432:5432"
+  frontend:
+    build: 
+      context: ./ryoko-ui
+      args:
+        - REACT_APP_NGINXPROXY=http://backend:5000
+        - REACT_APP_PORT=http://localhost:8080
+    container_name: frontend
+    environment:
+      - REACT_APP_NGINXPROXY=http://backend:5000
+      - REACT_APP_PORT=http://localhost:8080
+    ports:
+      - "8080:8080"
+    env_file:
+      - ".env"
+    depends_on:
+      - backend
+volumes:
+  postgres_data: {}
