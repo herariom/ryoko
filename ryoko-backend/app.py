@@ -5,17 +5,17 @@ from flask_login import login_required, current_user, login_user, logout_user, L
 from flask_bcrypt import Bcrypt
 from schema import Schema, And, Use, Or, SchemaError
 import database
+import dashboard
 
 app = Flask(__name__)
 
 app.secret_key = os.urandom(24)
 bcrypt = Bcrypt(app)
 
-CORS(app, supports_credentials=True) # Enable CORS
+CORS(app) # Enable CORS
 bcrypt = Bcrypt(app) # Init Bcrypt
 
 valid_operators = ['=', '<', '>']
-
 
 
 # The value for each item can be empty on the client side, but we expect the client to have filtered this out. If they ask the server
@@ -27,7 +27,7 @@ schema = Schema([{
 }])
 
 
-@app.route('/', methods=['POST', 'GET'])
+@app.route('/api/cities', methods=['POST', 'GET'])
 def default():
     if request.method == 'GET':
         # Return all cities
@@ -43,6 +43,20 @@ def default():
             return jsonify({'error': 'Invalid query parameters'}), 400
 
         return jsonify(database.filter_data(database.get_data(), query_params)), 200
+
+@app.route('/api/city', methods=['GET'])
+def city():
+    city_name = request.args.get('city')
+    data = database.get_data()
+    for city in data["d"]:
+        if city["city"] == city_name:
+            response = {}
+
+            response["scores"] = dashboard.get_city_scores(city["lat"], city["long"])
+            response["links"] = dashboard.get_city_job_links(city)
+
+            return jsonify(response), 200
+    return jsonify({'error': 'City not found'}), 400
 
 if __name__ == "__main__":
     app.run('0.0.0.0', '5000', debug=True)

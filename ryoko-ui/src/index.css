@@ -109,6 +109,14 @@ body {
   height: 20px;
 }
 
+.dashboard {
+  display: flex;
+}
+
+.dashboard-image {
+  height: 100%;
+  padding-right: 5px;
+}
 
 .Dropdown-root {
   position: relative;

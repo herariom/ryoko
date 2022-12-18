@@ -20,7 +20,10 @@ const App = () => {
   }, [])
 
   const fetchCities = async () => {
-    const res = await fetch('http://localhost:5000/')
+    const res = await fetch('http://localhost:5000/api/cities', {
+      method: 'GET',
+      mode: 'cors'
+    })
     var data = await res.json()
     data = data['d']
 
@@ -28,8 +31,9 @@ const App = () => {
   }
 
   const search = async (query) => {
-    const res = await fetch('http://localhost:5000/', {
+    const res = await fetch('http://localhost:5000/api/cities', {
       method: 'POST',
+      mode: 'cors',
       headers: {
         'Content-type': 'application/json',
       },
@@ -44,7 +48,6 @@ const App = () => {
     }
 
     data = data['d']
-
     setCities(data)
   }
 

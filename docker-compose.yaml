@@ -7,6 +7,7 @@ services:
         - DBNAME=${POSTGRES_DB}
         - USER=${USER}
         - PASS=${PASS}
+        - WS_API=${WS_API}
     container_name: backend
     ports:
       - "5000:5000"
