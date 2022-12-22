@@ -11,7 +11,7 @@ def get_data():
     data = load_data()
     return data
 
-def filter_data(data: dict, filter_params: dict):
-    filters = filtering.create_filter_rules(filter_params)
+def filter_data(data: dict, filter_params: dict, location_params: dict):
+    filters = filtering.create_filter_rules(filter_params, location_params)
 
     return filtering.apply_filter(data, filters)

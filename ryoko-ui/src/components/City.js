@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Dashboard from './Dashboard'
 
 
-const City = ({ cityResult, onDelete, onToggle }) => {
+const City = ({ cityResult }) => {
   const [showDashboard, setShowDashboard] = useState(false)
   const [links, setLinks] = useState({indeed: '', glassdoor: '', zillow: ''})
   const [scores, setScores] = useState({walk: "Not Available", bike: "Not Available", transit: "Not Available"})
@@ -31,7 +31,7 @@ const City = ({ cityResult, onDelete, onToggle }) => {
   }
 
   return (
-    <div className='task'>
+    <div className='city'>
         <h3>{cityResult.city}</h3>
         <p>State: {cityResult.state}</p>
         <p>Population: {cityResult.population}</p>

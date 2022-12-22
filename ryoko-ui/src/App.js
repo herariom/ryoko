@@ -31,6 +31,7 @@ const App = () => {
   }
 
   const search = async (query) => {
+    console.log("Called");
     const res = await fetch('http://localhost:5000/api/cities', {
       method: 'POST',
       mode: 'cors',

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap');
 
 * {
   box-sizing: border-box;
@@ -7,7 +7,10 @@
 }
 
 body {
-  font-family: 'Poppins', sans-serif;
+  color: #212130;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 15px;
+  line-height: 1.6em;
 }
 
 .container {
@@ -29,8 +32,8 @@ body {
 
 .btn {
   display: inline-block;
-  background: #000;
-  color: #fff;
+  background: #45404F;
+  color: #fff;  
   border: none;
   padding: 10px 20px;
   margin: 5px;
@@ -39,6 +42,10 @@ body {
   text-decoration: none;
   font-size: 15px;
   font-family: inherit;
+}
+
+.btn-loc {
+  background: #D78A76;
 }
 
 .btn:focus {
@@ -54,15 +61,11 @@ body {
   width: 100%;
 }
 
-.task {
-  background: #f4f4f4;
+.city {
+  background: #E6EBF0;
   margin: 5px;
   padding: 10px 20px;
   cursor: pointer;
-}
-
-.task.reminder {
-  border-left: 5px solid green;
 }
 
 .task h3 {
@@ -91,7 +94,8 @@ body {
 }
 
 .form-control input {
-  margin-left: 10px;
+  margin-left: 0px;
+  width: 75px;
 }
 
 .form-control-check {
@@ -111,11 +115,24 @@ body {
 
 .dashboard {
   display: flex;
+  margin-top: 5px;
 }
 
 .dashboard-image {
   height: 100%;
   padding-right: 5px;
+}
+
+.dashboard-details {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-right: 10px;
+}
+
+.break {
+  flex-basis: 100%;
+  height: 0;
 }
 
 .Dropdown-root {
@@ -133,7 +150,7 @@ body {
   cursor: default;
   outline: none;
   margin-left: 10px;
-  padding: 0px 52px 0px 10px;
+  padding: 0px 30px 0px 10px;
   transition: all 200ms ease;
 }
 
@@ -151,7 +168,7 @@ body {
   margin-top: -ceil(2.5);
   position: absolute;
   right: 10px;
-  top: 14px;
+  top: 11px;
   width: 0
 }
 
@@ -213,7 +230,21 @@ body {
   padding: 8px 10px;
 }
 
+.location-label {
+   margin-right: 10px;
+}
+
 footer {
   margin-top: 30px;
   text-align: center;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type=number] {
+    -moz-appearance:textfield; /* Firefox */
 }
