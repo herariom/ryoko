@@ -4,6 +4,20 @@ provider "aws" {
 
 terraform {
   required_version = ">= 0.12.0"
+  
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+    }
+  }
+  
+  cloud {
+    organization = "herariom"
+
+    workspaces {
+      name = "ryoko-actions"
+    }
+  }
 }
 
 resource "aws_vpc" "ryoko-vpc" {
