@@ -4,13 +4,13 @@ provider "aws" {
 
 terraform {
   required_version = ">= 0.12.0"
-  
+
   required_providers {
     aws = {
       source = "hashicorp/aws"
     }
   }
-  
+
   cloud {
     organization = "herariom"
 
@@ -21,24 +21,24 @@ terraform {
 }
 
 resource "aws_vpc" "ryoko-vpc" {
-  cidr_block = "10.0.0.0/16"
+  cidr_block           = "10.0.0.0/16"
   enable_dns_hostnames = true
-  enable_dns_support = true
+  enable_dns_support   = true
 }
 
 resource "aws_subnet" "subnet-a" {
-  cidr_block = "${cidrsubnet(aws_vpc.ryoko-vpc.cidr_block, 3, 1)}"
-  vpc_id = "${aws_vpc.ryoko-vpc.id}"
+  cidr_block        = cidrsubnet(aws_vpc.ryoko-vpc.cidr_block, 3, 1)
+  vpc_id            = aws_vpc.ryoko-vpc.id
   availability_zone = "us-east-1a"
 }
 
 resource "aws_security_group" "security-group" {
-  name = "ryoko-security-group"
-  vpc_id = "${aws_vpc.ryoko-vpc.id}"
+  name   = "ryoko-security-group"
+  vpc_id = aws_vpc.ryoko-vpc.id
   ingress {
     from_port = 22
-    to_port = 22
-    protocol = "tcp"
+    to_port   = 22
+    protocol  = "tcp"
     cidr_blocks = [
       "0.0.0.0/0"
     ]
@@ -74,11 +74,11 @@ resource "aws_security_group" "security-group" {
   }
 
   egress {
-   from_port = 0
-   to_port = 0
-   protocol = "-1"
-   cidr_blocks = ["0.0.0.0/0"]
- }
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
 data "aws_ami" "amazon_linux_2" {
@@ -168,9 +168,9 @@ resource "aws_instance" "web" {
   EOF
 
   vpc_security_group_ids = ["${aws_security_group.security-group.id}"]
-  iam_instance_profile = aws_iam_instance_profile.ec2_profile_ryoko.name
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile_ryoko.name
 
-  subnet_id = "${aws_subnet.subnet-a.id}"
+  subnet_id = aws_subnet.subnet-a.id
 
   monitoring              = true
   disable_api_termination = false
@@ -178,24 +178,24 @@ resource "aws_instance" "web" {
 }
 
 resource "aws_eip" "web-ip" {
-  instance = "${aws_instance.web.id}"
+  instance = aws_instance.web.id
   vpc      = true
 }
 
 resource "aws_internet_gateway" "ryoko-igw" {
-  vpc_id = "${aws_vpc.ryoko-vpc.id}"
+  vpc_id = aws_vpc.ryoko-vpc.id
 }
 
 resource "aws_route_table" "route-table" {
-  vpc_id = "${aws_vpc.ryoko-vpc.id}"
-  
+  vpc_id = aws_vpc.ryoko-vpc.id
+
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = "${aws_internet_gateway.ryoko-igw.id}"
+    gateway_id = aws_internet_gateway.ryoko-igw.id
   }
 }
 
 resource "aws_route_table_association" "subnet-association" {
-  subnet_id      = "${aws_subnet.subnet-a.id}"
-  route_table_id = "${aws_route_table.route-table.id}"
+  subnet_id      = aws_subnet.subnet-a.id
+  route_table_id = aws_route_table.route-table.id
 }
