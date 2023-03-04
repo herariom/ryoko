@@ -1,135 +1,35 @@
 provider "aws" {
-  region  = "us-east-1"
+  region = "us-east-1"
 }
 
-resource "aws_default_vpc" "default_vpc" {
+terraform {
+  required_version = ">= 0.12.0"
 }
 
-resource "aws_default_subnet" "default_subnet_a" {
+resource "aws_vpc" "ryoko-vpc" {
+  cidr_block = "10.0.0.0/16"
+  enable_dns_hostnames = true
+  enable_dns_support = true
+}
+
+resource "aws_subnet" "subnet-a" {
+  cidr_block = "${cidrsubnet(aws_vpc.ryoko-vpc.cidr_block, 3, 1)}"
+  vpc_id = "${aws_vpc.ryoko-vpc.id}"
   availability_zone = "us-east-1a"
 }
 
-resource "aws_default_subnet" "default_subnet_b" {
-  availability_zone = "us-east-1b"
-}
-
-resource "aws_default_subnet" "default_subnet_c" {
-  availability_zone = "us-east-1c"
-}
-
-# Repository for the frontend
-resource "aws_ecr_repository" "ryoko_ui" {
-  name = "ryoko-ui-repo"
-}
-
-# Repository for the backend
-resource "aws_ecr_repository" "ryoko_backend" {
-  name = "ryoko-backend-repo"
-}
-
-# Define an ECS cluster
-resource "aws_ecs_cluster" "ryoko_cluster" {
-  name = "ryoko-cluster"
-}
-
-# Define a task for the frontend
-resource "aws_ecs_task_definition" "ryoko_frontend_task" {
-  family                   = "ryoko-frontend-task"
-  container_definitions    = <<DEFINITION
-  [
-    {
-      "name": "ryoko-frontend-task",
-      "image": "${aws_ecr_repository.ryoko_ui.repository_url}",
-      "essential": true,
-      "portMappings": [
-        {
-          "containerPort": 8080,
-          "hostPort": 8080,
-          "protocol": "tcp"
-        }
-      ],
-      "environment": [
-        {
-            "name": "REACT_APP_NGINXPROXY",
-            "value": "http://localhost:5000"
-        },
-        {
-            "name": "REACT_APP_PORT",
-            "value": "http://localhost:8080"
-        }
-      ],
-      "memory": 512,
-      "cpu": 256
-    }
-  ]
-  DEFINITION
-  requires_compatibilities = ["FARGATE"]
-  network_mode             = "awsvpc"
-  memory                   = 1024
-  cpu                      = 512
-  execution_role_arn       = "${aws_iam_role.ecsTaskExecutionRole.arn}"
-}
-
-# Define a task for the backend
-resource "aws_ecs_task_definition" "ryoko_backend_task" {
-  family                   = "ryoko-backend-task"
-  container_definitions    = <<DEFINITION
-  [
-    {
-      "name": "ryoko-backend-task",
-      "image": "${aws_ecr_repository.ryoko_backend.repository_url}",
-      "essential": true,
-      "portMappings": [
-        {
-          "containerPort": 5000,
-          "hostPort": 5000
-        }
-      ],
-      "memory": 512,
-      "cpu": 256
-    }
-  ]
-  DEFINITION
-  requires_compatibilities = ["FARGATE"]
-  network_mode             = "awsvpc"
-  memory                   = 512
-  cpu                      = 256
-  execution_role_arn       = "${aws_iam_role.ecsTaskExecutionRole.arn}"
-}
-
-resource "aws_iam_role" "ecsTaskExecutionRole" {
-  name               = "ecsTaskExecutionRole"
-  assume_role_policy = "${data.aws_iam_policy_document.assume_role_policy.json}"
-}
-
-data "aws_iam_policy_document" "assume_role_policy" {
-  statement {
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["ecs-tasks.amazonaws.com"]
-    }
+resource "aws_security_group" "security-group" {
+  name = "ryoko-security-group"
+  vpc_id = "${aws_vpc.ryoko-vpc.id}"
+  ingress {
+    from_port = 22
+    to_port = 22
+    protocol = "tcp"
+    cidr_blocks = [
+      "0.0.0.0/0"
+    ]
   }
-}
 
-resource "aws_iam_role_policy_attachment" "ecsTaskExecutionRole_policy" {
-  role       = "${aws_iam_role.ecsTaskExecutionRole.name}"
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-}
-
-resource "aws_alb" "application_load_balancer" {
-  name               = "ryoko-lb"
-  load_balancer_type = "application"
-  subnets = [
-    "${aws_default_subnet.default_subnet_a.id}",
-    "${aws_default_subnet.default_subnet_b.id}",
-    "${aws_default_subnet.default_subnet_c.id}"
-  ]
-  security_groups = ["${aws_security_group.load_balancer_security_group.id}"]
-}
-
-resource "aws_security_group" "load_balancer_security_group" {
   ingress {
     from_port   = 80
     to_port     = 80
@@ -137,75 +37,151 @@ resource "aws_security_group" "load_balancer_security_group" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-resource "aws_lb_target_group" "target_group" {
-  name        = "target-group"
-  port        = 8080
-  protocol    = "HTTP"
-  target_type = "ip"
-  vpc_id      = "${aws_default_vpc.default_vpc.id}"
-
-  health_check {
-    healthy_threshold = "2"
-    unhealthy_threshold = "6"
-    interval = "30"
-    matcher = "200,301,302"
-    path = "/"
-    protocol = "HTTP"
-    timeout = "5"
-  }
-}
-
-resource "aws_lb_listener" "listener" {
-  load_balancer_arn = "${aws_alb.application_load_balancer.arn}"
-  port              = "80"
-  protocol          = "HTTP"
-  default_action {
-    type             = "forward"
-    target_group_arn = "${aws_lb_target_group.target_group.arn}"
-  }
-}
-
-resource "aws_ecs_service" "ryoko_service" {
-  name            = "ryoko_service"
-  cluster         = "${aws_ecs_cluster.ryoko_cluster.id}"
-  task_definition = "${aws_ecs_task_definition.ryoko_frontend_task.arn}"
-  launch_type     = "FARGATE"
-  desired_count   = 3
-
-  load_balancer {
-    target_group_arn = "${aws_lb_target_group.target_group.arn}"
-    container_name   = "${aws_ecs_task_definition.ryoko_frontend_task.family}"
-    container_port   = 8080
-  }
-
-  network_configuration {
-    subnets          = ["${aws_default_subnet.default_subnet_a.id}", "${aws_default_subnet.default_subnet_b.id}", "${aws_default_subnet.default_subnet_c.id}"]
-    assign_public_ip = true
-    security_groups  = ["${aws_security_group.service_security_group.id}"]
-  }
-}
-
-
-resource "aws_security_group" "service_security_group" {
   ingress {
-    from_port = 0
-    to_port   = 0
-    protocol  = "-1"
-    security_groups = ["${aws_security_group.load_balancer_security_group.id}"]
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+
+  ingress {
+    from_port   = -1
+    to_port     = -1
+    protocol    = "icmp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+   from_port = 0
+   to_port = 0
+   protocol = "-1"
+   cidr_blocks = ["0.0.0.0/0"]
+ }
+}
+
+data "aws_ami" "amazon_linux_2" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-ebs"]
   }
+}
+
+resource "aws_iam_role" "ec2_role_ryoko" {
+  name = "ec2_role_ryoko"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Effect": "Allow",
+      "Sid": ""
+    }
+  ]
+}
+EOF
+
+  tags = {
+    project = "hello-world"
+  }
+}
+
+resource "aws_iam_instance_profile" "ec2_profile_ryoko" {
+  name = "ec2_profile_ryoko"
+  role = aws_iam_role.ec2_role_ryoko.name
+}
+
+resource "aws_iam_role_policy" "ec2_policy" {
+  name = "ec2_policy"
+  role = aws_iam_role.ec2_role_ryoko.id
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "ecr:GetAuthorizationToken",
+        "ecr:BatchGetImage",
+        "ecr:GetDownloadUrlForLayer"
+      ],
+      "Effect": "Allow",
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_instance" "web" {
+  ami           = data.aws_ami.amazon_linux_2.id
+  instance_type = "t3.micro"
+  key_name      = "ryoko"
+
+  root_block_device {
+    volume_size = 8
+  }
+
+  user_data = <<-EOF
+              #!/bin/bash
+              set -ex
+              sudo yum update -y
+              sudo amazon-linux-extras install docker -y
+              sudo yum install git -y
+              sudo service docker start
+              sudo usermod -a -G docker ec2-user
+              sudo curl -L https://github.com/docker/compose/releases/download/v2.16.0/docker-compose-linux-x86_64 -o /usr/sbin/docker-compose
+              sudo chmod +x /usr/sbin/docker-compose
+              git clone https://github.com/herariom/ryoko
+              cd ryoko
+              mv .env.template .env
+              sudo docker-compose up -d
+  EOF
+
+  vpc_security_group_ids = ["${aws_security_group.security-group.id}"]
+  iam_instance_profile = aws_iam_instance_profile.ec2_profile_ryoko.name
+
+  subnet_id = "${aws_subnet.subnet-a.id}"
+
+  monitoring              = true
+  disable_api_termination = false
+  ebs_optimized           = true
+}
+
+resource "aws_eip" "web-ip" {
+  instance = "${aws_instance.web.id}"
+  vpc      = true
+}
+
+resource "aws_internet_gateway" "ryoko-igw" {
+  vpc_id = "${aws_vpc.ryoko-vpc.id}"
+}
+
+resource "aws_route_table" "route-table" {
+  vpc_id = "${aws_vpc.ryoko-vpc.id}"
+  
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = "${aws_internet_gateway.ryoko-igw.id}"
+  }
+}
+
+resource "aws_route_table_association" "subnet-association" {
+  subnet_id      = "${aws_subnet.subnet-a.id}"
+  route_table_id = "${aws_route_table.route-table.id}"
 }
